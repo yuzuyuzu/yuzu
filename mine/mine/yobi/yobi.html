@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="ja" style="
+	height: 100%;
+	user-select: none;
+	-webkit-user-select: none;
+">
+
+<head>
+
+<meta charset="utf-8">
+
+<title>date program</title>
+
+<!-- ★ iOS や Android 用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=420, user-scalable=no">
+
+<!-- ★ Windows 用 -->
+<style>
+@-ms-viewport { width:420px;}
+body { -ms-content-zooming:none;}
+</style>
+
+</head>
+
+<body style="
+	background-color: #999999;
+
+	font-size: 30px;
+	color: #000000;
+
+	text-align: center;
+">
+
+<br><br><br>
+<div style = "background-color: #cccccc; display: inline-block; padding: 20px; width: 600px;">
+
+<br>
+
+<div style = "background-color: #ffffcc; display: inline-block; padding: 20px; width: 550px;">
+<span style = "font-size: 50px;">Date Program</span>
+</div><br><br>
+
+<select id="y1000" onchange="kawatta();">
+<option>0</option> <option>1</option> <option>2</option> <option>3</option> <option>4</option>
+<option>5</option> <option>6</option> <option>7</option> <option>8</option> <option>9</option>
+</select>
+
+<select id="y100" onchange="kawatta();">
+<option>0</option> <option>1</option> <option>2</option> <option>3</option> <option>4</option>
+<option>5</option> <option>6</option> <option>7</option> <option>8</option> <option>9</option>
+</select>
+
+<select id="y10" onchange="kawatta();">
+<option>0</option> <option>1</option> <option>2</option> <option>3</option> <option>4</option>
+<option>5</option> <option>6</option> <option>7</option> <option>8</option> <option>9</option>
+</select>
+
+<select id="y1" onchange="kawatta();">
+<option>0</option> <option>1</option> <option>2</option> <option>3</option> <option>4</option>
+<option>5</option> <option>6</option> <option>7</option> <option>8</option> <option>9</option>
+</select>
+
+年
+
+<select id="m" onchange="kawatta();">
+<option>1</option> <option>2</option> <option>3</option> <option>4</option> <option>5</option> <option>6</option>
+<option>7</option> <option>8</option> <option>9</option> <option>10</option> <option>11</option> <option>12</option>
+</select>
+
+月
+
+<select id="d" onchange="kawatta();">
+<option>1</option> <option>2</option> <option>3</option> <option>4</option> <option>5</option>
+<option>6</option> <option>7</option> <option>8</option> <option>9</option> <option>10</option>
+<option>11</option> <option>12</option> <option>13</option> <option>14</option> <option>15</option>
+<option>16</option> <option>17</option> <option>18</option> <option>19</option> <option>20</option>
+<option>21</option> <option>22</option> <option>23</option> <option>24</option> <option>25</option>
+<option>26</option> <option>27</option> <option>28</option> <option>29</option> <option>30</option>
+<option>31</option>
+</select>
+
+日
+
+<br>
+<br>
+
+<span id="ans">[ここに結果が出ます]</span><br>
+
+<br>
+</div><br><br><br>
+
+<script>
+
+function kawatta(){
+	let y, m, d;
+	let s;
+	let d_o;
+
+	y =
+		document.getElementById( "y1000").selectedIndex * 1000 +
+		document.getElementById( "y100").selectedIndex * 100 +
+		document.getElementById( "y10").selectedIndex * 10 +
+		document.getElementById( "y1").selectedIndex;
+	m = document.getElementById( "m").selectedIndex + 1;
+	d = document.getElementById( "d").selectedIndex + 1;
+
+	d_o = new Date();
+	d_o.setUTCFullYear( y);
+	d_o.setMonth( m - 1);
+	d_o.setDate( d);
+
+	s = "西暦" + y + "年" + ( d_o.getMonth() + 1) + "月" + d_o.getDate() + "日は";
+
+	const YOBI = [ "日", "月", "火", "水", "木", "金", "土"];
+	s += YOBI[d_o.getDay()]+"曜日です。";
+
+	document.getElementById( "ans").innerHTML = s;
+}
+
+</script>
+
+</body>
+
+</html>

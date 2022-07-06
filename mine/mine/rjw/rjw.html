@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+
+<html lang="ja" style="
+	height: 100%;
+	user-select: none;
+	-webkit-user-select: none;
+">
+
+<head>
+
+<meta charset="utf-8">
+
+<script>
+const sw = navigator.serviceWorker;
+if( sw) sw.register( "rjw_service_worker.js?1", { scope : "./"});
+</script>
+
+<title>RUN</title>
+
+<link rel="apple-touch-icon" href="icon_rjw.png" />
+<meta name="apple-mobile-web-app-title" content="RUN">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<!-- ★ iOS や Android 用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=420, user-scalable=no">
+
+<!-- ★ Windows 用 -->
+<style>
+@-ms-viewport { width:420px;}
+body { -ms-content-zooming:none;}
+</style>
+
+</head>
+
+<body style="
+	height: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #999999;
+
+	font-family: 'Rounded Mplus 1c', sans-serif;
+	font-size: 30px;
+	font-weight: 500;
+	color: #000000;
+	line-height: 1.2;
+	text-align: center;
+">
+
+<canvas style="
+	width:400px;
+	height:600px;
+
+	user-select:none;
+	-moz-user-select:none;
+	-webkit-user-select:none;
+	-ms-user-select:none;
+
+	-webkit-tap-highlight-color:rgba( 0,0,0,0);
+
+	-ms-touch-action:none;
+	touch-action:none;
+" id="c1"></canvas><br>
+
+<script src="skeleton_audio.js"></script>
+<script src="skeleton_touch.js"></script>
+
+<script>
+
+var can, ctx;
+
+can = document.getElementById("c1");
+can.width = 400;
+can.height = 600;
+ctx = can.getContext("2d");
+
+var MAXTOUCH = 5;
+var CAN_PINCH = false;
+var REFW = 400, REFH = 600;
+
+var ska;
+var skt;
+
+var AUDIONUM = 4;
+ska = new skeleton_audio();
+
+var bgm_game = ska.load( "audio/bgm_game.mp3");
+var se_touch = ska.load( "audio/se_touch.mp3");
+var se_hit = ska.load( "audio/se_hit.mp3");
+var se_coin = ska.load( "audio/se_coin.mp3");
+
+skt = new skeleton_touch( can);
+skt.set_mag_and_orientation( 1, 0);
+function touch_event_hook(){
+	if( skt.num == 1 && skt.x == skt.bx && skt.y == skt.by){
+		//★ シングルタッチでかつ、動いていないタッチに限る。
+		if( !ska.did_ios_start){
+			ska.start_ios();
+		}
+	}
+}
+
+//●●●●●●●●●●
+
+var img_bg_title;
+img_bg_title = new Image();
+img_bg_title.src = "image/bg_title.png"
+
+var img_bg_game_1, img_bg_game_2;
+img_bg_game_1 = new Image();
+img_bg_game_1.src = "image/bg_game_1.png"
+img_bg_game_2 = new Image();
+img_bg_game_2.src = "image/bg_game_2.png"
+
+var img_bg_game_over;
+img_bg_game_over = new Image();
+img_bg_game_over.src = "image/bg_game_over.png"
+
+img_risu = new Image();
+img_risu.src = "image/tora.png"
+
+var img_daruma;
+img_daruma = new Image();
+img_daruma.src = "image/daruma.png"
+
+var img_coin;
+img_coin = new Image();
+img_coin.src = "image/tama.png"
+
+var img_ground;
+img_ground = new Image();
+img_ground.src = "image/ground.png"
+
+var scene;
+var count;
+var score;
+var mochi;
+
+var rx, ry, rvy, rdy;
+var vx, vy;
+var gx;
+let dan;
+
+const GY = 460, GW = 50, GH = 20, GU = 100;
+
+const NON = 10000;
+
+const MAXCOIN = 30;
+var cx = new Array( MAXCOIN);
+var cy = new Array( MAXCOIN);
+
+scene = 0;
+count = 0;
+
+tic();
+
+function tic(){
+
+	let i, j;
+	let x, y;
+	let f;
+
+	requestAnimationFrame( tic);
+
+	skt.pre();
+
+	//●●●●●●●●●●
+
+	switch( scene){
+	case 0: //● ローディング画面。
+
+		ctx.fillStyle="#000000";
+		ctx.fillRect( 0, 0, 400, 600);
+
+		if( ska.loaded_count == AUDIONUM) {
+			scene = 1;
+			count = 0;
+		}
+
+		break;
+
+	case 1: //● タイトル画面。
+
+		ctx.drawImage( img_bg_title, 0, 0);
+
+		ctx.fillStyle="#666666";
+		ctx.font="30px 'Arial";
+		if( count%30 > 15)ctx.fillText( "タッチでスタート", 80, 590);
+
+		if( skt.start){
+			scene = 2;
+			count = 0;
+			score = 0;
+			mochi = 5;
+			ska.play_loop( bgm_game);
+			ska.play( se_touch);
+			rx = 100;
+			ry = GY - 40;
+			rvy = 0;
+			rdy = 0;
+			gx = 0;
+			for( i = 0; i < MAXCOIN; i++)cx[ i] = NON;
+		}
+
+		break;
+
+	case 2: //● ゲーム中画面。
+
+		var s;
+
+		const GD = "__________ZZ__ZZ__ ___  ___   ___TTTT TTTT  TTTT __ TT __ TT ____    ____TTTT    TTTT_____    TTTTT     ___T  T  T   TTTTT";
+
+		//● 今いるところの文字を取得。　
+		s = GD.substr( Math.floor( ( rx + gx)/GW), 1);
+
+		rdy += rvy; //● 縦方向に動かす。
+
+		if( rdy <= GU && GU < rdy - rvy){
+			//● 動いた結果、二階ぴったりか二階より下にきた。
+			//● かつ、動く前は二階よりも高かった。
+			if( s == "Z" || s == "T"){
+				//●二階に乗った瞬間。
+				rdy = GU;
+				rvy = 0;
+			}
+		} else if( rdy <= 0 && 0 < rdy - rvy){
+			//● 動いた結果、一階ぴったりか一階より下にきた。
+			//● かつ、動く前は一階よりも高かった。
+			if( s == "Z" || s == "_"){
+				//● 一階に乗った瞬間。
+				rdy = 0;
+				rvy = 0;
+			}
+		}
+
+		f = false;
+
+		if( rdy == GU){
+			//● 二階ぴったりの高さ。
+			if( s == "T" || s == "Z"){
+				//● 二階のまま。
+				f = true;
+			} else{
+				//● 二階から踏み外した瞬間。
+				rvy--;
+				//rdy -= 10;
+			}
+		} else if( rdy == 0){
+			//● 一階ぴったりの高さ。
+			if( s == "_" || s == "Z"){
+				//● 一階のまま。
+				f = true;
+			} else{
+				//● 一階から踏み外した瞬間。
+				rvy--;
+				//rdy -= 10;
+			}
+		} else{
+			//● 二階にも一階にも乗っていない。
+			rvy--;
+		}
+
+		if( skt.start){ //● タッチスタート。
+			if( f){
+				//● 地面にいる。
+				//● ジャンプ。
+				ska.play( se_hit);
+				rvy = 15;
+				//rdy = 0;
+				dan = 1;
+			} else{
+				//● 空中にいる。
+				if( dan == 1){
+					ska.play( se_hit);
+					rvy = 15;
+					dan++;
+				}
+			}
+		}
+
+		//● 新しいコインを登場させる。
+		if( count%10 == 0) add_coin();
+
+		//● コインを動かす。
+		for( i = 0; i < MAXCOIN; i++){
+			if( cx[ i] != NON){
+				cx[ i] -= 4;
+				x = cx[ i] - rx;
+				y =cy[ i] - ( ry - rdy);
+				//if( -20 < x && x < 20 && -40 < y && y < 40){
+				if( Math.abs( x) < 40 && Math.abs( y) < 50){
+					//● コインをゲットした。
+					ska.play( se_coin);
+					score += 10;
+					cx[ i] = NON;
+				}else{
+					if( cx[ i] < -10) cx[ i] = NON;
+				}
+			}
+		}
+
+		if( 600 < ry - rdy){
+			//● 画面の下端に落ちた。
+			ska.stop( bgm_game);
+			//ska.play( se_touch);
+			scene = 3;
+			count = 0;
+		}
+
+	//●●●●●●●●●●
+
+		//● 背景を描画。
+		ctx.drawImage( img_bg_game_2, 0, 0);
+
+		//● 地面を描画。
+		for ( i = 0; i < GD.length; i++){
+			s = GD.substr( i, 1);
+			if( s == "_"){
+				//● 一階の地面を描画。
+				//ctx.fillStyle="#000000";
+				//ctx.fillRect( i*GW - gx, GY, GW, GH);
+				ctx.drawImage( img_ground , i*GW - gx - 10, GY - 10);
+			}
+			else if( s == "T"){
+				//● 二階の地面を描画。
+				//ctx.fillStyle="#000000";
+				//ctx.fillRect( i*GW - gx, GY - GU, GW, GH);
+				ctx.drawImage( img_ground , i*GW - gx - 10, GY - GU - 10);
+			}
+			else if( s == "Z"){
+				//● 一階と二階の地面を描画。
+				//ctx.fillStyle="#000000";
+				//ctx.fillRect( i*GW - gx, GY, GW, GH);
+				//ctx.fillRect( i*GW - gx, GY - GU, GW, GH);
+				ctx.drawImage( img_ground , i*GW - gx - 10, GY - 10);
+				ctx.drawImage( img_ground , i*GW - gx - 10, GY - GU - 10);
+			}
+		}
+
+		//★ りすくんを描画。
+		//ctx.drawImage( img_risu [ Math.floor( count/10) % 2], rx - 40, ry - rdy - 40);
+		ctx.drawImage(
+			img_risu,
+			Math.floor( count/10) % 3*100, 0, 100, 80,
+			rx - 50, ry - rdy - 40, 100, 80
+		);
+
+		//★ コインを描画。
+		for( i = 0; i < MAXCOIN; i++){
+			if( cx[ i] != NON){
+				ctx.drawImage( img_coin, cx[ i] - 15, cy[ i] - 15);
+			}
+		}
+
+		//★ スコアを描画。
+		ctx.fillStyle="#666666";
+		ctx.font="30px 'Arial";
+		ctx.fillText( "スコア", 10, 590);
+		ctx.font="60px 'Arial";
+		ctx.fillText( score, 110, 590);
+
+		gx += 4;
+
+		ctx.drawImage( img_bg_game_1, 0, 0);
+
+		break;
+
+	case 3: //● ゲームオーバー。
+
+		ctx.drawImage( img_bg_game_over, 0, 0);
+
+		ctx.fillStyle="#ffffff";
+		ctx.font="30px 'Arial";
+		ctx.fillText( "スコアは", 60, 210);
+		ctx.font="60px 'Arial";
+		ctx.fillText( score, 180, 210);
+		ctx.font="30px 'Arial";
+		ctx.fillText( "点でした。", 200, 240);
+
+		if( 60 < count) { //★ ゲームオーバー画面になってから1秒間は反応しない。
+
+			ctx.fillStyle="#ffffff";
+			ctx.font="30px 'Arial";
+			ctx.fillText( "タッチでタイトルへ", 60, 590);
+
+			if( skt.start && 60 < count){
+				scene = 1; //★ タイトル画面へ戻る。
+				count = 0;
+				ska.play( se_touch);
+			}
+		}
+
+		break;
+
+	}
+
+	//●●●●●●●●●●
+
+	skt.post();
+
+	count++;
+}
+
+function add_coin(){
+	let i;
+
+	for( i = 0; i < MAXCOIN; i++){
+		if( cx[ i] == NON){
+			cx[ i] = 400;
+			cy[ i] = 120 + 300*Math.random();
+			break;
+		}
+	}
+}
+
+</script>
+
+</body>
+
+</html>

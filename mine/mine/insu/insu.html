@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<html lang="ja" style="
+	height: 100%;
+	user-select: none;
+	-webkit-user-select: none;
+">
+
+<head>
+
+<meta charset="utf-8">
+
+<title>prime factorization</title>
+
+<!-- ★ iOS や Android 用 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=420, user-scalable=no">
+
+<!-- ★ Windows 用 -->
+<style>
+@-ms-viewport { width:420px;}
+body { -ms-content-zooming:none;}
+</style>
+
+</head>
+
+<body style="
+	background-color: #999999;
+
+	font-size: 30px;
+	color: #000000;
+
+	text-align: center;
+">
+
+<br><br><br>
+<div style = "background-color: #cccccc; display: inline-block; padding: 20px; width: 600px;">
+<br>
+<div style = "background-color: #ffffcc; display: inline-block; padding: 20px; width: 550px;">
+<span style = "font-size: 50px;">Prime Factorization</span>
+</div><br><br>
+素因数分解のプログラムです<br>
+下記の枠内に数字を入力後<br>
+pushを押してください<br>
+<br>
+
+<input id="in_1">
+<button onclick = "tes();">push</button><br>
+
+<br>
+
+<span id="sp_1">[ここに結果が出ます]</span><br>
+
+<br>
+</div><br><br><br>
+
+<script>
+
+function tes(){
+	let a, b, i;
+	let s;
+
+	a = parseInt( document.getElementById( "in_1").value);
+	s = a + "を素因数分解すると";
+
+	for( i = 0; i < 10000; i++){
+		b = get_a_prime_factor( a);
+		if( b == 0){ s = s + a + "です。"; break;}
+		a = a/b;
+		s = s + b + " x ";
+	}
+
+	document.getElementById( "sp_1").innerHTML = s;
+}
+
+function get_a_prime_factor( x){
+	let i;
+	for( i = 2; i < x/2; i++){
+		if( x%i == 0) break;
+	}
+	if( i <= x/2) return i;
+	return 0;
+}
+
+</script>
+
+</body>
+
+</html>
